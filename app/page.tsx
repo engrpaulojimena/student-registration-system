@@ -1,108 +1,104 @@
-import { pool } from "@/lib/db";
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import Sidebar from "@/components/Sidebar";
+import { useRouter } from "next/navigation";
 
-export default async function Students() {
-  const result = await pool.query(`
-    SELECT
-      s.student_no,
-      s.first_name,
-      s.last_name,
-      c.course_code,
-      s.year_level
-    FROM fmstudents s
-    LEFT JOIN fmcourses c ON s.course_id = c.course_id
-    ORDER BY s.student_no ASC
-  `);
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail]       = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError]       = useState("");
+  const [loading, setLoading]   = useState(false);
 
-  const yearBadge: Record<number, string> = {
-    1: "bg-blue-500/10 text-blue-400 border-blue-500/30",
-    2: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
-    3: "bg-purple-500/10 text-purple-400 border-purple-500/30",
-    4: "bg-orange-500/10 text-orange-400 border-orange-500/30",
-  };
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+    setLoading(false);
+
+    if (!res.ok) {
+      setError(data.error);
+      return;
+    }
+
+    router.push("/dashboard");
+  }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white flex">
-      <Sidebar />
-      <section className="flex-1 p-8 overflow-auto">
+    <main className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
 
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold">Students</h1>
-            <p className="text-slate-400 mt-1">
-              {result.rows.length} student{result.rows.length !== 1 ? "s" : ""} registered
-            </p>
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-xl mx-auto mb-3">
+            E
           </div>
-          <Link
-            href="/students/add"
-            className="bg-blue-600 hover:bg-blue-700 transition px-5 py-2.5 rounded-lg text-sm font-semibold"
-          >
-            + Add Student
-          </Link>
+          <h1 className="text-2xl font-bold text-white">EduTrack</h1>
+          <p className="text-slate-500 text-sm mt-1">Registration System</p>
         </div>
 
-        {/* Table */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-          {result.rows.length === 0 ? (
-            <div className="px-6 py-16 text-center text-slate-500 text-sm">
-              No students yet.{" "}
-              <Link href="/students/add" className="text-blue-400 hover:underline">
-                Add one now.
-              </Link>
+        {/* Card */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8">
+          <h2 className="text-lg font-semibold text-white mb-6">Sign in to your account</h2>
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm text-slate-400 mb-2">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition placeholder:text-slate-600"
+              />
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-slate-400 text-left border-b border-slate-800">
-                    <th className="px-6 py-3 font-medium">Student No</th>
-                    <th className="px-6 py-3 font-medium">Name</th>
-                    <th className="px-6 py-3 font-medium">Course</th>
-                    <th className="px-6 py-3 font-medium">Year Level</th>
-                    <th className="px-6 py-3 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.rows.map((student) => (
-                    <tr
-                      key={student.student_no}
-                      className="border-b border-slate-800/50 hover:bg-slate-800/30 transition"
-                    >
-                      <td className="px-6 py-4 text-slate-400 font-mono text-xs">
-                        {student.student_no}
-                      </td>
-                      <td className="px-6 py-4 font-medium">
-                        {student.first_name} {student.last_name}
-                      </td>
-                      <td className="px-6 py-4 text-slate-300">
-                        {student.course_code ?? "—"}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2.5 py-1 rounded-full text-xs border ${yearBadge[student.year_level] ?? "bg-slate-700 text-slate-300"}`}>
-                          Year {student.year_level}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex gap-2">
-                          <Link
-                            href={`/students/${student.student_no}/edit`}
-                            className="px-3 py-1.5 text-xs rounded-lg bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-400 transition"
-                          >
-                            Edit
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+
+            <div>
+              <label className="block text-sm text-slate-400 mb-2">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition placeholder:text-slate-600"
+              />
             </div>
-          )}
+
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 text-red-400 text-sm">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 transition rounded-lg py-3 text-sm font-semibold text-white mt-2"
+            >
+              {loading ? "Signing in..." : "Sign In"}
+            </button>
+          </form>
+
+          <p className="text-center text-slate-500 text-sm mt-6">
+            Don't have an account?{" "}
+            <Link href="/signup" className="text-indigo-400 hover:text-indigo-300 transition">
+              Request access
+            </Link>
+          </p>
         </div>
 
-      </section>
+      </div>
     </main>
   );
 }

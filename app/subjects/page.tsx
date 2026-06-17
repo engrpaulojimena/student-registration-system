@@ -1,7 +1,9 @@
+import { unstable_noStore as noStore } from "next/cache"
 import { pool } from "@/lib/db";
 import Sidebar from "@/components/Sidebar";
 
 export default async function Subjects() {
+  noStore()
   const result = await pool.query(`
     SELECT subject_id, subject_code, subject_name
     FROM fmsubjects

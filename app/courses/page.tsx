@@ -1,7 +1,10 @@
+
+import { unstable_noStore as noStore } from "next/cache";
 import { pool } from "@/lib/db";
 import Sidebar from "@/components/Sidebar";
 
 export default async function Courses() {
+  noStore()
   const result = await pool.query(`
     SELECT course_id, course_code, course_name
     FROM fmcourses

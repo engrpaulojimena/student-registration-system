@@ -1,8 +1,9 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { pool } from "@/lib/db";
 import Sidebar from "@/components/Sidebar";
 
 export default async function Dashboard() {
-
+noStore(); // disable caching — always fetch fresh data
   const studentsCount    = await pool.query("SELECT COUNT(*) FROM fmstudents");
   const coursesCount     = await pool.query("SELECT COUNT(*) FROM fmcourses");
   const subjectsCount    = await pool.query("SELECT COUNT(*) FROM fmsubjects");

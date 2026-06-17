@@ -3,8 +3,8 @@ import { getCourses } from "@/lib/course";
 import { updateStudent } from "@/lib/student";
 import Sidebar from "@/components/Sidebar";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { notFound } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
+import PhotoUploader from "@/components/PhotoUploader";
 
 export default async function EditStudent({
   params,
@@ -37,114 +37,167 @@ export default async function EditStudent({
     redirect("/students");
   }
 
-  return (
-    <main className="min-h-screen bg-slate-950 text-white flex">
-      <Sidebar />
-      <section className="flex-1 p-8 overflow-auto">
+  const initials = `${student.first_name[0]}${student.last_name[0]}`.toUpperCase();
 
-        {/* Header */}
+  return (
+    <main className="min-h-screen flex" style={{ background: "var(--bg-base)", color: "var(--text-primary)" }}>
+      <Sidebar />
+      <section className="flex-1 p-6 md:p-8 overflow-auto pt-20 md:pt-8">
+
         <div className="mb-8">
-          <div className="flex items-center gap-2 text-slate-500 text-sm mb-3">
-            <Link href="/students" className="hover:text-slate-300 transition">Students</Link>
-            <span>/</span>
-            <span className="text-slate-300">Edit</span>
+          <div className="flex items-center gap-2 text-sm mb-3">
+            <Link href="/students" className="transition-colors hover:opacity-80" style={{ color: "var(--text-muted)" }}>
+              Students
+            </Link>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              style={{ color: "var(--text-muted)" }}>
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+            <span style={{ color: "var(--text-secondary)" }}>Edit</span>
           </div>
-          <h1 className="text-3xl font-bold">Edit Student</h1>
-          <p className="text-slate-400 text-sm mt-1 font-mono">{student.student_no}</p>
+          <h1 className="text-3xl font-bold tracking-tight">Edit Student</h1>
+          <p className="font-mono text-sm mt-1" style={{ color: "var(--text-muted)" }}>{student.student_no}</p>
         </div>
 
-        <div className="max-w-2xl bg-slate-900 border border-slate-800 rounded-xl p-8">
-          <form action={handleUpdate} className="space-y-5">
+        <div className="max-w-2xl space-y-6">
 
-            <div>
-              <label className="block text-sm text-slate-400 mb-2">Student No</label>
-              <input
-                value={student.student_no}
-                disabled
-                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg p-3 text-sm text-slate-500 cursor-not-allowed"
-              />
-              <p className="text-slate-600 text-xs mt-1">Student number cannot be changed.</p>
-            </div>
+          {/* Photo Card */}
+          <div className="rounded-2xl p-6"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+            <h2 className="text-sm font-semibold mb-4" style={{ color: "var(--text-secondary)" }}>
+              STUDENT PHOTO
+            </h2>
+            <PhotoUploader
+              studentId={studentId}
+              currentPhotoUrl={student.photo_url ?? null}
+              initials={initials}
+            />
+          </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm text-slate-400 mb-2">First Name</label>
-                <input
-                  name="firstName"
-                  type="text"
-                  defaultValue={student.first_name}
-                  required
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-indigo-500 transition"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-2">Middle Name</label>
-                <input
-                  name="middleName"
-                  type="text"
-                  defaultValue={student.middle_name ?? ""}
-                  placeholder="Optional"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-indigo-500 transition placeholder:text-slate-600"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-2">Last Name</label>
-                <input
-                  name="lastName"
-                  type="text"
-                  defaultValue={student.last_name}
-                  required
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-indigo-500 transition"
-                />
-              </div>
-            </div>
+          {/* Info Card */}
+          <div className="rounded-2xl p-8 gradient-border"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
 
-            <div className="grid grid-cols-2 gap-4">
+            <form action={handleUpdate} className="space-y-6">
               <div>
-                <label className="block text-sm text-slate-400 mb-2">Course</label>
-                <select
-                  name="courseId"
-                  defaultValue={student.course_id}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-indigo-500 transition"
+                <label className="block text-xs font-semibold uppercase tracking-wider mb-2"
+                  style={{ color: "var(--text-secondary)" }}>
+                  Student Number
+                </label>
+                <input
+                  value={student.student_no}
+                  disabled
+                  className="w-full rounded-xl px-4 py-3 text-sm cursor-not-allowed"
+                  style={{
+                    background: "var(--bg-base)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-muted)",
+                    outline: "none",
+                  }}
+                />
+                <p className="text-xs mt-1.5" style={{ color: "var(--text-muted)" }}>
+                  Student number cannot be changed.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[
+                  { name: "firstName",  label: "First Name",  def: student.first_name,        required: true  },
+                  { name: "middleName", label: "Middle Name", def: student.middle_name ?? "",  required: false },
+                  { name: "lastName",   label: "Last Name",   def: student.last_name,          required: true  },
+                ].map((field) => (
+                  <div key={field.name}>
+                    <label className="block text-xs font-semibold uppercase tracking-wider mb-2"
+                      style={{ color: "var(--text-secondary)" }}>
+                      {field.label}
+                    </label>
+                    <input
+                      name={field.name}
+                      type="text"
+                      defaultValue={field.def}
+                      required={field.required}
+                      className="input-field w-full rounded-xl px-4 py-3 text-sm transition-all"
+                      style={{
+                        background: "var(--bg-elevated)",
+                        border: "1px solid var(--border)",
+                        color: "var(--text-primary)",
+                        outline: "none",
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2"
+                    style={{ color: "var(--text-secondary)" }}>
+                    Course
+                  </label>
+                  <select
+                    name="courseId"
+                    defaultValue={student.course_id}
+                    className="input-field w-full rounded-xl px-4 py-3 text-sm transition-all"
+                    style={{
+                      background: "var(--bg-elevated)",
+                      border: "1px solid var(--border)",
+                      color: "var(--text-primary)",
+                      outline: "none",
+                    }}
+                  >
+                    {courses.map((course: any) => (
+                      <option key={course.course_id} value={course.course_id}>
+                        {course.course_code} — {course.course_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2"
+                    style={{ color: "var(--text-secondary)" }}>
+                    Year Level
+                  </label>
+                  <select
+                    name="yearLevel"
+                    defaultValue={student.year_level}
+                    className="input-field w-full rounded-xl px-4 py-3 text-sm transition-all"
+                    style={{
+                      background: "var(--bg-elevated)",
+                      border: "1px solid var(--border)",
+                      color: "var(--text-primary)",
+                      outline: "none",
+                    }}
+                  >
+                    <option value="1">1st Year</option>
+                    <option value="2">2nd Year</option>
+                    <option value="3">3rd Year</option>
+                    <option value="4">4th Year</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+                  style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}
                 >
-                  {courses.map((course: any) => (
-                    <option key={course.course_id} value={course.course_id}>
-                      {course.course_code} — {course.course_name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-2">Year Level</label>
-                <select
-                  name="yearLevel"
-                  defaultValue={student.year_level}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-indigo-500 transition"
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  Save Changes
+                </button>
+                <Link
+                  href="/students"
+                  className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                  style={{ background: "var(--bg-elevated)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}
                 >
-                  <option value="1">1st Year</option>
-                  <option value="2">2nd Year</option>
-                  <option value="3">3rd Year</option>
-                  <option value="4">4th Year</option>
-                </select>
+                  Cancel
+                </Link>
               </div>
-            </div>
+            </form>
 
-            <div className="flex gap-3 pt-2">
-              <button
-                type="submit"
-                className="bg-indigo-600 hover:bg-indigo-700 transition px-6 py-2.5 rounded-lg text-sm font-semibold"
-              >
-                Save Changes
-              </button>
-              <Link
-                href="/students"
-                className="bg-slate-800 hover:bg-slate-700 transition px-6 py-2.5 rounded-lg text-sm font-semibold text-slate-300"
-              >
-                Cancel
-              </Link>
-            </div>
-
-          </form>
+          </div>
         </div>
 
       </section>

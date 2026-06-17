@@ -3,7 +3,7 @@ import { pool } from "@/lib/db";
 import Sidebar from "@/components/Sidebar";
 
 export default async function Enrollments() {
-  noStore()
+  noStore();
   const result = await pool.query(`
     SELECT
       s.student_no,
@@ -20,55 +20,82 @@ export default async function Enrollments() {
     ORDER BY e.school_year DESC, e.semester ASC, s.student_no ASC
   `);
 
-  return (
-    <main className="min-h-screen bg-slate-950 text-white flex">
-      <Sidebar />
-      <section className="flex-1 p-8 overflow-auto">
+  const semColors: Record<string, { bg: string; color: string; border: string }> = {
+    "1": { bg: "rgba(124,58,237,0.1)", color: "#A78BFA", border: "rgba(124,58,237,0.25)" },
+    "2": { bg: "rgba(6,182,212,0.1)",  color: "#22D3EE", border: "rgba(6,182,212,0.25)"  },
+  };
 
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold">Enrollments</h1>
-            <p className="text-slate-400 mt-1">{result.rows.length} enrollment record{result.rows.length !== 1 ? "s" : ""}</p>
-          </div>
+  return (
+    <main className="min-h-screen flex" style={{ background: "var(--bg-base)", color: "var(--text-primary)" }}>
+      <Sidebar />
+      <section className="flex-1 p-6 md:p-8 overflow-auto pt-20 md:pt-8">
+
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight">Enrollments</h1>
+          <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
+            {result.rows.length} enrollment record{result.rows.length !== 1 ? "s" : ""}
+          </p>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+        <div className="rounded-2xl overflow-hidden"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
           {result.rows.length === 0 ? (
-            <div className="px-6 py-16 text-center text-slate-500 text-sm">No enrollments yet.</div>
+            <div className="px-6 py-20 text-center">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="mx-auto mb-4"
+                style={{ color: "var(--text-muted)" }}>
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>No enrollment records yet.</p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-slate-400 text-left border-b border-slate-800">
-                    <th className="px-6 py-3 font-medium">#</th>
-                    <th className="px-6 py-3 font-medium">Student</th>
-                    <th className="px-6 py-3 font-medium">Course</th>
-                    <th className="px-6 py-3 font-medium">Subject</th>
-                    <th className="px-6 py-3 font-medium">School Year</th>
-                    <th className="px-6 py-3 font-medium">Sem</th>
+                  <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                    {["#", "Student", "Course", "Subject", "School Year", "Semester"].map((h) => (
+                      <th key={h} className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider"
+                        style={{ color: "var(--text-muted)" }}>
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {result.rows.map((row, i) => (
-                    <tr key={i} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition">
-                      <td className="px-6 py-4 text-slate-500">{i + 1}</td>
-                      <td className="px-6 py-4">
-                        <div className="font-medium">{row.student_name}</div>
-                        <div className="text-slate-500 text-xs font-mono">{row.student_no}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full text-xs">
-                          {row.course_code}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-slate-300">{row.subject_code}</div>
-                        <div className="text-slate-500 text-xs">{row.subject_name}</div>
-                      </td>
-                      <td className="px-6 py-4 text-slate-400">{row.school_year}</td>
-                      <td className="px-6 py-4 text-slate-400">Sem {row.semester}</td>
-                    </tr>
-                  ))}
+                  {result.rows.map((row, i) => {
+                    const sem = semColors[String(row.semester)] || semColors["1"];
+                    return (
+                      <tr key={i} className="table-row-hover transition-colors"
+                        style={{ borderBottom: "1px solid var(--border)" }}>
+                        <td className="px-6 py-4 font-mono text-xs w-16" style={{ color: "var(--text-muted)" }}>
+                          {String(i + 1).padStart(2, "0")}
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>{row.student_name}</p>
+                          <p className="font-mono text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{row.student_no}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="font-mono text-xs px-2.5 py-1 rounded-lg font-medium"
+                            style={{ background: "rgba(124,58,237,0.1)", color: "#A78BFA", border: "1px solid rgba(124,58,237,0.2)" }}>
+                            {row.course_code}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>{row.subject_code}</p>
+                          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{row.subject_name}</p>
+                        </td>
+                        <td className="px-6 py-4 font-mono text-sm" style={{ color: "var(--text-secondary)" }}>
+                          {row.school_year}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-xs font-semibold px-2.5 py-1 rounded-lg"
+                            style={{ background: sem.bg, color: sem.color, border: `1px solid ${sem.border}` }}>
+                            Sem {row.semester}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

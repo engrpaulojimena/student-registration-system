@@ -1,52 +1,79 @@
-
 import { unstable_noStore as noStore } from "next/cache";
 import { pool } from "@/lib/db";
 import Sidebar from "@/components/Sidebar";
 
 export default async function Courses() {
-  noStore()
+  noStore();
   const result = await pool.query(`
     SELECT course_id, course_code, course_name
     FROM fmcourses
     ORDER BY course_code ASC
   `);
 
-  return (
-    <main className="min-h-screen bg-slate-950 text-white flex">
-      <Sidebar />
-      <section className="flex-1 p-8 overflow-auto">
+  const colors = [
+    { bg: "rgba(124,58,237,0.1)",  color: "#A78BFA", border: "rgba(124,58,237,0.25)" },
+    { bg: "rgba(6,182,212,0.1)",   color: "#22D3EE", border: "rgba(6,182,212,0.25)"  },
+    { bg: "rgba(5,150,105,0.1)",   color: "#34D399", border: "rgba(5,150,105,0.25)"  },
+    { bg: "rgba(217,119,6,0.1)",   color: "#FB923C", border: "rgba(217,119,6,0.25)"  },
+    { bg: "rgba(239,68,68,0.1)",   color: "#F87171", border: "rgba(239,68,68,0.25)"  },
+  ];
 
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold">Courses</h1>
-            <p className="text-slate-400 mt-1">{result.rows.length} course{result.rows.length !== 1 ? "s" : ""} available</p>
-          </div>
+  return (
+    <main className="min-h-screen flex" style={{ background: "var(--bg-base)", color: "var(--text-primary)" }}>
+      <Sidebar />
+      <section className="flex-1 p-6 md:p-8 overflow-auto pt-20 md:pt-8">
+
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight">Courses</h1>
+          <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
+            {result.rows.length} course{result.rows.length !== 1 ? "s" : ""} available
+          </p>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+        <div className="rounded-2xl overflow-hidden"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
           {result.rows.length === 0 ? (
-            <div className="px-6 py-16 text-center text-slate-500 text-sm">No courses yet.</div>
+            <div className="px-6 py-20 text-center">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="mx-auto mb-4"
+                style={{ color: "var(--text-muted)" }}>
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+              </svg>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>No courses yet.</p>
+            </div>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-slate-400 text-left border-b border-slate-800">
-                  <th className="px-6 py-3 font-medium">#</th>
-                  <th className="px-6 py-3 font-medium">Course Code</th>
-                  <th className="px-6 py-3 font-medium">Course Name</th>
+                <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                  {["#", "Course Code", "Course Name"].map((h) => (
+                    <th key={h} className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider"
+                      style={{ color: "var(--text-muted)" }}>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {result.rows.map((course, i) => (
-                  <tr key={course.course_id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition">
-                    <td className="px-6 py-4 text-slate-500">{i + 1}</td>
-                    <td className="px-6 py-4">
-                      <span className="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-2.5 py-1 rounded-full text-xs font-mono">
-                        {course.course_code}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-slate-300">{course.course_name}</td>
-                  </tr>
-                ))}
+                {result.rows.map((course, i) => {
+                  const c = colors[i % colors.length];
+                  return (
+                    <tr key={course.course_id} className="table-row-hover transition-colors"
+                      style={{ borderBottom: "1px solid var(--border)" }}>
+                      <td className="px-6 py-4 font-mono text-xs w-16" style={{ color: "var(--text-muted)" }}>
+                        {String(i + 1).padStart(2, "0")}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="font-mono text-xs px-3 py-1.5 rounded-lg font-semibold"
+                          style={{ background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>
+                          {course.course_code}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 font-medium" style={{ color: "var(--text-primary)" }}>
+                        {course.course_name}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}

@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { pool } from "@/lib/db";
 import { deleteStudent, setStudentStatus } from "@/lib/student";
 import Link from "next/link";
@@ -5,6 +6,8 @@ import Sidebar from "@/components/Sidebar";
 import { redirect } from "next/navigation";
 
 export default async function Students() {
+  noStore(); // disable caching — always fetch fresh data
+
   const result = await pool.query(`
     SELECT
       s.student_id,
@@ -20,7 +23,6 @@ export default async function Students() {
     ORDER BY s.student_no ASC
   `);
 
-  // Server actions
   async function handleDelete(formData: FormData) {
     "use server";
     await deleteStudent(Number(formData.get("student_id")));
@@ -54,7 +56,6 @@ export default async function Students() {
       <Sidebar />
       <section className="flex-1 p-8 overflow-auto">
 
-        {/* Header */}
         <div className="flex justify-between items-start mb-8">
           <div>
             <h1 className="text-3xl font-bold">Students</h1>
@@ -74,7 +75,6 @@ export default async function Students() {
           </Link>
         </div>
 
-        {/* Table */}
         <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
           {result.rows.length === 0 ? (
             <div className="px-6 py-16 text-center text-slate-500 text-sm">
@@ -136,49 +136,33 @@ export default async function Students() {
                       </td>
                       <td className="px-6 py-3.5">
                         <div className="flex items-center gap-2">
-
-                          {/* Edit */}
                           <Link
                             href={`/students/${student.student_id}/edit`}
                             className="px-3 py-1.5 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 transition"
                           >
                             Edit
                           </Link>
-
-                          {/* Toggle Active/Inactive */}
                           {student.status === "active" ? (
                             <form action={handleSetInactive}>
                               <input type="hidden" name="student_id" value={student.student_id} />
-                              <button
-                                type="submit"
-                                className="px-3 py-1.5 text-xs rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 transition"
-                              >
+                              <button type="submit" className="px-3 py-1.5 text-xs rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 transition">
                                 Set Inactive
                               </button>
                             </form>
                           ) : (
                             <form action={handleSetActive}>
                               <input type="hidden" name="student_id" value={student.student_id} />
-                              <button
-                                type="submit"
-                                className="px-3 py-1.5 text-xs rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 transition"
-                              >
+                              <button type="submit" className="px-3 py-1.5 text-xs rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 transition">
                                 Set Active
                               </button>
                             </form>
                           )}
-
-                          {/* Delete */}
                           <form action={handleDelete}>
                             <input type="hidden" name="student_id" value={student.student_id} />
-                            <button
-                              type="submit"
-                              className="px-3 py-1.5 text-xs rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 transition"
-                            >
+                            <button type="submit" className="px-3 py-1.5 text-xs rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 transition">
                               Delete
                             </button>
                           </form>
-
                         </div>
                       </td>
                     </tr>

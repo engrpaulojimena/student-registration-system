@@ -1,5 +1,6 @@
 import { pool } from "@/lib/db";
 import Sidebar from "@/components/Sidebar";
+import StudentsPerCourse from "@/components/charts/StudentsPerCourse";
 
 export default async function Dashboard() {
   const studentsCount    = await pool.query("SELECT COUNT(*) FROM fmstudents");
@@ -23,6 +24,17 @@ export default async function Dashboard() {
     ORDER BY e.school_year DESC, e.semester DESC
     LIMIT 5
   `);
+
+  const studentsPerCourse = await pool.query(`
+  SELECT
+    c.course_code,
+    COUNT(*) as total
+  FROM fmstudents s
+  INNER JOIN fmcourses c
+    ON s.course_id = c.course_id
+  GROUP BY c.course_code
+  ORDER BY total DESC
+`);
 
   const stats = [
     {
@@ -84,6 +96,8 @@ export default async function Dashboard() {
       borderColor: "rgba(217,119,6,0.2)",
     },
   ];
+
+
 
   const quickActions = [
     {
@@ -176,6 +190,16 @@ export default async function Dashboard() {
               <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>{stat.label}</p>
             </div>
           ))}
+        </div>
+
+        {/* Chart */}
+        <div className="mb-6">
+          <StudentsPerCourse
+            data={studentsPerCourse.rows.map((row) => ({
+              course_code: row.course_code,
+              total: Number(row.total),
+            }))}
+          />
         </div>
 
         {/* Quick Actions */}

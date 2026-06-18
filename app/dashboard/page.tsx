@@ -25,6 +25,9 @@ export default async function Dashboard() {
   `);
 
   const stats = [
+
+
+    
     {
       label: "Total Students",
       count: studentsCount.rows[0].count,

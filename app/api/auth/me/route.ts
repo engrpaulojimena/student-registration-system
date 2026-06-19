@@ -7,12 +7,16 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const result = await pool.query(
-    "SELECT full_name, email FROM fmusers WHERE user_id = $1",
+    "SELECT full_name, email, role FROM fmusers WHERE user_id = $1",
     [session.userId]
   );
 
   if (result.rows.length === 0)
     return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-  return NextResponse.json({ fullName: result.rows[0].full_name, email: result.rows[0].email });
+  return NextResponse.json({
+    fullName: result.rows[0].full_name,
+    email: result.rows[0].email,
+    role: result.rows[0].role,
+  });
 }

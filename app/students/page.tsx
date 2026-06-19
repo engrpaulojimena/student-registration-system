@@ -177,6 +177,13 @@ export default async function Students() {
                         <td className="px-5 py-3">
                           <div className="flex items-center gap-2">
                             <Link
+                              href={`/students/${student.student_id}`}
+                              className="px-3 py-1.5 text-xs rounded-lg font-semibold transition-colors"
+                              style={{ background: "rgba(124,58,237,0.1)", color: "#A78BFA", border: "1px solid rgba(124,58,237,0.3)" }}
+                            >
+                              View
+                            </Link>
+                            <Link
                               href={`/students/${student.student_id}/edit`}
                               className="px-3 py-1.5 text-xs rounded-lg font-medium transition-colors"
                               style={{ background: "var(--bg-elevated)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}

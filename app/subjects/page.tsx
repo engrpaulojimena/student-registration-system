@@ -1,14 +1,25 @@
 import { unstable_noStore as noStore } from "next/cache";
-import { pool } from "@/lib/db";
+import { getSubjects, createSubject, updateSubject, deleteSubject } from "@/lib/subject";
 import Sidebar from "@/components/Sidebar";
+import { redirect } from "next/navigation";
 
-export default async function Subjects() {
+const inputStyle = {
+  background: "var(--bg-elevated)",
+  border: "1px solid var(--border)",
+  color: "var(--text-primary)",
+  outline: "none",
+} as const;
+
+export default async function Subjects({
+  searchParams,
+}: {
+  searchParams: Promise<{ edit?: string; error?: string }>;
+}) {
   noStore();
-  const result = await pool.query(`
-    SELECT subject_id, subject_code, subject_name
-    FROM fmsubjects
-    ORDER BY subject_code ASC
-  `);
+  const { edit, error } = await searchParams;
+
+  const subjects = await getSubjects();
+  const editingSubject = edit ? subjects.find((s: any) => String(s.subject_id) === edit) : null;
 
   const colors = [
     { bg: "rgba(124,58,237,0.1)",  color: "#A78BFA", border: "rgba(124,58,237,0.25)" },
@@ -18,6 +29,30 @@ export default async function Subjects() {
     { bg: "rgba(239,68,68,0.1)",   color: "#F87171", border: "rgba(239,68,68,0.25)"  },
   ];
 
+  async function handleSave(formData: FormData) {
+    "use server";
+    const subjectId   = formData.get("subject_id") as string;
+    const subjectCode = (formData.get("subject_code") as string).trim().toUpperCase();
+    const subjectName = (formData.get("subject_name") as string).trim();
+
+    if (subjectId) {
+      await updateSubject(Number(subjectId), subjectCode, subjectName);
+    } else {
+      await createSubject(subjectCode, subjectName);
+    }
+    redirect("/subjects");
+  }
+
+  async function handleDelete(formData: FormData) {
+    "use server";
+    try {
+      await deleteSubject(Number(formData.get("subject_id")));
+    } catch (err: any) {
+      redirect(`/subjects?error=${encodeURIComponent(err.message)}`);
+    }
+    redirect("/subjects");
+  }
+
   return (
     <main className="min-h-screen flex" style={{ background: "var(--bg-base)", color: "var(--text-primary)" }}>
       <Sidebar />
@@ -26,26 +61,104 @@ export default async function Subjects() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">Subjects</h1>
           <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
-            {result.rows.length} subject{result.rows.length !== 1 ? "s" : ""} in the curriculum
+            {subjects.length} subject{subjects.length !== 1 ? "s" : ""} in the curriculum
           </p>
         </div>
 
+        {error && (
+          <div className="flex items-center gap-3 rounded-xl px-4 py-3 mb-6"
+            style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#F87171" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span className="text-sm">{error}</span>
+          </div>
+        )}
+
+        {/* Add / Edit form */}
+        <div className="rounded-2xl p-6 mb-6 gradient-border"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+          <h2 className="text-sm font-semibold uppercase tracking-wider mb-4" style={{ color: "var(--text-muted)" }}>
+            {editingSubject ? "Edit Subject" : "Add New Subject"}
+          </h2>
+          <form action={handleSave} className="flex flex-wrap gap-3 items-end">
+            {editingSubject && (
+              <input type="hidden" name="subject_id" value={editingSubject.subject_id} />
+            )}
+            <div>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>
+                Subject Code
+              </label>
+              <input
+                name="subject_code"
+                type="text"
+                placeholder="e.g. CS101"
+                required
+                defaultValue={editingSubject?.subject_code ?? ""}
+                className="input-field rounded-xl px-4 py-2.5 text-sm w-40 font-mono uppercase"
+                style={inputStyle}
+              />
+            </div>
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>
+                Subject Name
+              </label>
+              <input
+                name="subject_name"
+                type="text"
+                placeholder="e.g. Introduction to Computing"
+                required
+                defaultValue={editingSubject?.subject_name ?? ""}
+                className="input-field w-full rounded-xl px-4 py-2.5 text-sm"
+                style={inputStyle}
+              />
+            </div>
+            <button type="submit"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity shrink-0"
+              style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}>
+              {editingSubject ? (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  Save Changes
+                </>
+              ) : (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                  Add Subject
+                </>
+              )}
+            </button>
+            {editingSubject && (
+              <a href="/subjects"
+                className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors shrink-0"
+                style={{ background: "var(--bg-elevated)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}>
+                Cancel
+              </a>
+            )}
+          </form>
+        </div>
+
+        {/* Subjects table */}
         <div className="rounded-2xl overflow-hidden"
           style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-          {result.rows.length === 0 ? (
+          {subjects.length === 0 ? (
             <div className="px-6 py-20 text-center">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="mx-auto mb-4"
                 style={{ color: "var(--text-muted)" }}>
                 <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
                 <line x1="8" y1="18" x2="21" y2="18"/>
               </svg>
-              <p className="text-sm" style={{ color: "var(--text-muted)" }}>No subjects yet.</p>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>No subjects yet. Add your first one above.</p>
             </div>
           ) : (
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                  {["#", "Subject Code", "Subject Name"].map((h) => (
+                  {["#", "Subject Code", "Subject Name", "Actions"].map((h) => (
                     <th key={h} className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider"
                       style={{ color: "var(--text-muted)" }}>
                       {h}
@@ -54,7 +167,7 @@ export default async function Subjects() {
                 </tr>
               </thead>
               <tbody>
-                {result.rows.map((subject, i) => {
+                {subjects.map((subject: any, i: number) => {
                   const c = colors[i % colors.length];
                   return (
                     <tr key={subject.subject_id} className="table-row-hover transition-colors"
@@ -70,6 +183,23 @@ export default async function Subjects() {
                       </td>
                       <td className="px-6 py-4 font-medium" style={{ color: "var(--text-primary)" }}>
                         {subject.subject_name}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <a href={`/subjects?edit=${subject.subject_id}`}
+                            className="px-3 py-1.5 text-xs rounded-lg font-medium transition-colors"
+                            style={{ background: "var(--bg-elevated)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}>
+                            Edit
+                          </a>
+                          <form action={handleDelete}>
+                            <input type="hidden" name="subject_id" value={subject.subject_id} />
+                            <button type="submit"
+                              className="px-3 py-1.5 text-xs rounded-lg font-medium transition-colors"
+                              style={{ background: "rgba(239,68,68,0.08)", color: "#F87171", border: "1px solid rgba(239,68,68,0.2)" }}>
+                              Delete
+                            </button>
+                          </form>
+                        </div>
                       </td>
                     </tr>
                   );

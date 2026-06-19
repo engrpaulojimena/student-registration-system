@@ -57,6 +57,28 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    href: "/users",
+    label: "Users",
+    superAdminOnly: true,
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        <circle cx="18" cy="6" r="2" fill="currentColor" stroke="none"/>
+      </svg>
+    ),
+  },
+  {
+    href: "/audit-logs",
+    label: "Audit Logs",
+    superAdminOnly: true,
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+        <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+      </svg>
+    ),
+  },
 ];
 
 function ThemeToggle() {
@@ -115,12 +137,16 @@ export default function Sidebar() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState<{ fullName: string; email: string } | null>(null);
+  const [role, setRole] = useState<string | null>(null);
 
-  useEffect(() => {
+useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
-        if (data?.fullName) setUser(data);
+        if (data?.fullName) {
+          setUser(data);
+          setRole(data.role ?? null);
+        }
       })
       .catch(() => {});
   }, []);
@@ -160,7 +186,9 @@ export default function Sidebar() {
           Navigation
         </p>
         <div className="space-y-0.5">
-          {navItems.map((item) => {
+          {navItems
+  .filter((item) => !item.superAdminOnly || role === "super_admin")
+  .map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
             return (
               <Link

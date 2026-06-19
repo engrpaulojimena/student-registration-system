@@ -11,16 +11,17 @@ export default async function Dashboard() {
   const recentEnrollments = await pool.query(`
     SELECT
       s.student_no,
+      s.student_id,
       s.first_name || ' ' || s.last_name AS student_name,
       c.course_code,
-      sub.subject_code,
-      sub.subject_name,
       e.school_year,
-      e.semester
+      e.semester,
+      COUNT(es.subject_id)::int AS subject_count
     FROM fmenrollments e
-    INNER JOIN fmstudents s   ON e.student_id  = s.student_id
-    INNER JOIN fmsubjects sub ON e.subject_id  = sub.subject_id
-    INNER JOIN fmcourses c    ON s.course_id   = c.course_id
+    INNER JOIN fmstudents s ON e.student_id = s.student_id
+    INNER JOIN fmcourses  c ON s.course_id  = c.course_id
+    LEFT  JOIN fmenrollment_subjects es ON es.enrollment_id = e.enrollment_id
+    GROUP BY e.enrollment_id, s.student_id, s.student_no, s.first_name, s.last_name, c.course_code
     ORDER BY e.school_year DESC, e.semester DESC
     LIMIT 5
   `);
@@ -37,6 +38,9 @@ export default async function Dashboard() {
 `);
 
   const stats = [
+
+
+    
     {
       label: "Total Students",
       count: studentsCount.rows[0].count,
@@ -254,7 +258,7 @@ export default async function Dashboard() {
               <table className="w-full text-sm">
                 <thead>
                   <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                    {["#", "Student", "Course", "Subject", "School Year", "Sem"].map((h) => (
+                    {["#", "Student", "Course", "School Year", "Sem", "Subjects", ""].map((h) => (
                       <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider"
                         style={{ color: "var(--text-muted)" }}>
                         {h}
@@ -277,16 +281,23 @@ export default async function Dashboard() {
                           {row.course_code}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{row.subject_code}</p>
-                        <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{row.subject_name}</p>
-                      </td>
                       <td className="px-6 py-4 text-sm" style={{ color: "var(--text-secondary)" }}>{row.school_year}</td>
                       <td className="px-6 py-4">
                         <span className="text-xs font-medium px-2 py-0.5 rounded-md"
                           style={{ background: "var(--bg-elevated)", color: "var(--text-secondary)" }}>
                           Sem {row.semester}
                         </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{row.subject_count}</span>
+                        <span className="text-xs ml-1" style={{ color: "var(--text-muted)" }}>subj</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <a href={`/students/${row.student_id}`}
+                          className="text-xs font-medium px-2.5 py-1 rounded-lg hover:opacity-80"
+                          style={{ background: "rgba(124,58,237,0.1)", color: "#A78BFA", border: "1px solid rgba(124,58,237,0.2)" }}>
+                          View →
+                        </a>
                       </td>
                     </tr>
                   ))}

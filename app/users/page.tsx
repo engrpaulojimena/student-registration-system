@@ -3,9 +3,15 @@ import { pool } from "@/lib/db";
 import { isSuperAdmin } from "@/lib/auth";
 import { logAction } from "@/lib/audit";
 import { redirect, notFound } from "next/navigation";
+import Sidebar from "@/components/Sidebar";
 
-export default async function UserManagement() {
+export default async function UserManagement({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   noStore();
+  const { page } = await searchParams;
 
   const allowed = await isSuperAdmin();
   if (!allowed) notFound();
@@ -51,6 +57,11 @@ export default async function UserManagement() {
   const pending = result.rows.filter(u => u.status === "pending");
   const others  = result.rows.filter(u => u.status !== "pending");
 
+  const PAGE_SIZE = 10;
+  const totalPages = Math.max(1, Math.ceil(others.length / PAGE_SIZE));
+  const currentPage = Math.min(Math.max(1, Number(page) || 1), totalPages);
+  const paginatedOthers = others.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
   const roleBadge: Record<string, { bg: string; color: string; border: string }> = {
     super_admin: { bg: "rgba(239,68,68,0.1)",  color: "#f87171", border: "rgba(239,68,68,0.3)"  },
     user:        { bg: "rgba(100,116,139,0.1)",color: "#94a3b8", border: "rgba(100,116,139,0.3)"},
@@ -63,7 +74,9 @@ export default async function UserManagement() {
   };
 
   return (
-    <div className="p-6 md:p-8 min-h-screen" style={{ color: "var(--text-primary)" }}>
+    <main className="min-h-screen flex" style={{ background: "var(--bg-base)", color: "var(--text-primary)" }}>
+      <Sidebar />
+      <section className="flex-1 p-6 md:p-8 overflow-auto pt-20 md:pt-8">
 
       <div className="mb-8">
         <h1 className="text-3xl font-bold">User Management</h1>
@@ -140,7 +153,7 @@ export default async function UserManagement() {
               </tr>
             </thead>
             <tbody>
-              {others.map((u) => {
+              {paginatedOthers.map((u) => {
                 const rb = roleBadge[u.role] ?? roleBadge.user;
                 const sb = statusBadge[u.status] ?? statusBadge.active;
                 return (
@@ -177,7 +190,48 @@ export default async function UserManagement() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {others.length > PAGE_SIZE && (
+          <div className="flex items-center justify-between mt-4 px-2">
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              Page {currentPage} of {totalPages} · {others.length} user{others.length !== 1 ? "s" : ""}
+            </p>
+            <div className="flex items-center gap-1.5">
+              <a href={`/users?page=${Math.max(1, currentPage - 1)}`}
+                aria-disabled={currentPage === 1}
+                className="px-3 py-1.5 text-xs rounded-lg font-medium transition-colors"
+                style={{
+                  background: "var(--bg-elevated)", color: "var(--text-secondary)", border: "1px solid var(--border)",
+                  opacity: currentPage === 1 ? 0.4 : 1, pointerEvents: currentPage === 1 ? "none" : "auto",
+                }}>
+                Prev
+              </a>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <a key={p} href={`/users?page=${p}`}
+                  className="w-8 h-8 flex items-center justify-center text-xs rounded-lg font-medium transition-all"
+                  style={{
+                    background: currentPage === p ? "linear-gradient(135deg, #7C3AED, #06B6D4)" : "var(--bg-elevated)",
+                    color: currentPage === p ? "#fff" : "var(--text-secondary)",
+                    border: currentPage === p ? "none" : "1px solid var(--border)",
+                  }}>
+                  {p}
+                </a>
+              ))}
+              <a href={`/users?page=${Math.min(totalPages, currentPage + 1)}`}
+                aria-disabled={currentPage === totalPages}
+                className="px-3 py-1.5 text-xs rounded-lg font-medium transition-colors"
+                style={{
+                  background: "var(--bg-elevated)", color: "var(--text-secondary)", border: "1px solid var(--border)",
+                  opacity: currentPage === totalPages ? 0.4 : 1, pointerEvents: currentPage === totalPages ? "none" : "auto",
+                }}>
+                Next
+              </a>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+      </section>
+    </main>
   );
 }

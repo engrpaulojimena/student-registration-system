@@ -3,9 +3,19 @@ import { getAllEnrollments } from "@/lib/enrollment";
 import Sidebar from "@/components/Sidebar";
 import Link from "next/link";
 
-export default async function Enrollments() {
+export default async function Enrollments({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   noStore();
+  const { page } = await searchParams;
   const enrollments = await getAllEnrollments();
+
+  const PAGE_SIZE = 10;
+  const totalPages = Math.max(1, Math.ceil(enrollments.length / PAGE_SIZE));
+  const currentPage = Math.min(Math.max(1, Number(page) || 1), totalPages);
+  const paginatedEnrollments = enrollments.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const semColors: Record<number, { bg: string; color: string; border: string }> = {
     1: { bg: "rgba(124,58,237,0.1)", color: "#A78BFA", border: "rgba(124,58,237,0.25)" },
@@ -53,13 +63,13 @@ export default async function Enrollments() {
                   </tr>
                 </thead>
                 <tbody>
-                  {enrollments.map((row, i) => {
+                  {paginatedEnrollments.map((row, i) => {
                     const sem = semColors[row.semester] ?? semColors[1];
                     return (
                       <tr key={row.enrollment_id} className="table-row-hover transition-colors"
                         style={{ borderBottom: "1px solid var(--border)" }}>
                         <td className="px-6 py-4 font-mono text-xs w-12" style={{ color: "var(--text-muted)" }}>
-                          {String(i + 1).padStart(2, "0")}
+                          {String((currentPage - 1) * PAGE_SIZE + i + 1).padStart(2, "0")}
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
@@ -116,6 +126,46 @@ export default async function Enrollments() {
             </div>
           )}
         </div>
+
+        {/* Pagination */}
+        {enrollments.length > PAGE_SIZE && (
+          <div className="flex items-center justify-between mt-4 px-2">
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              Page {currentPage} of {totalPages} · {enrollments.length} record{enrollments.length !== 1 ? "s" : ""}
+            </p>
+            <div className="flex items-center gap-1.5">
+              <a href={`/enrollments?page=${Math.max(1, currentPage - 1)}`}
+                aria-disabled={currentPage === 1}
+                className="px-3 py-1.5 text-xs rounded-lg font-medium transition-colors"
+                style={{
+                  background: "var(--bg-elevated)", color: "var(--text-secondary)", border: "1px solid var(--border)",
+                  opacity: currentPage === 1 ? 0.4 : 1, pointerEvents: currentPage === 1 ? "none" : "auto",
+                }}>
+                Prev
+              </a>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <a key={p} href={`/enrollments?page=${p}`}
+                  className="w-8 h-8 flex items-center justify-center text-xs rounded-lg font-medium transition-all"
+                  style={{
+                    background: currentPage === p ? "linear-gradient(135deg, #7C3AED, #06B6D4)" : "var(--bg-elevated)",
+                    color: currentPage === p ? "#fff" : "var(--text-secondary)",
+                    border: currentPage === p ? "none" : "1px solid var(--border)",
+                  }}>
+                  {p}
+                </a>
+              ))}
+              <a href={`/enrollments?page=${Math.min(totalPages, currentPage + 1)}`}
+                aria-disabled={currentPage === totalPages}
+                className="px-3 py-1.5 text-xs rounded-lg font-medium transition-colors"
+                style={{
+                  background: "var(--bg-elevated)", color: "var(--text-secondary)", border: "1px solid var(--border)",
+                  opacity: currentPage === totalPages ? 0.4 : 1, pointerEvents: currentPage === totalPages ? "none" : "auto",
+                }}>
+                Next
+              </a>
+            </div>
+          </div>
+        )}
 
       </section>
     </main>

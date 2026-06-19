@@ -13,13 +13,25 @@ const inputStyle = {
 export default async function Subjects({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string; error?: string }>;
+  searchParams: Promise<{ edit?: string; error?: string; page?: string }>;
 }) {
   noStore();
-  const { edit, error } = await searchParams;
+  const { edit, error, page } = await searchParams;
 
   const subjects = await getSubjects();
   const editingSubject = edit ? subjects.find((s: any) => String(s.subject_id) === edit) : null;
+
+  const PAGE_SIZE = 10;
+  const totalPages = Math.max(1, Math.ceil(subjects.length / PAGE_SIZE));
+  const currentPage = Math.min(Math.max(1, Number(page) || 1), totalPages);
+  const paginatedSubjects = subjects.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  function buildPageUrl(p: number) {
+    const sp = new URLSearchParams();
+    if (edit) sp.set("edit", edit);
+    sp.set("page", String(p));
+    return `/subjects?${sp.toString()}`;
+  }
 
   const colors = [
     { bg: "rgba(124,58,237,0.1)",  color: "#A78BFA", border: "rgba(124,58,237,0.25)" },
@@ -167,7 +179,7 @@ export default async function Subjects({
                 </tr>
               </thead>
               <tbody>
-                {subjects.map((subject: any, i: number) => {
+                {paginatedSubjects.map((subject: any, i: number) => {
                   const c = colors[i % colors.length];
                   return (
                     <tr key={subject.subject_id} className="table-row-hover transition-colors"
@@ -208,6 +220,46 @@ export default async function Subjects({
             </table>
           )}
         </div>
+
+        {/* Pagination */}
+        {subjects.length > PAGE_SIZE && (
+          <div className="flex items-center justify-between mt-4 px-2">
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              Page {currentPage} of {totalPages} · {subjects.length} subject{subjects.length !== 1 ? "s" : ""}
+            </p>
+            <div className="flex items-center gap-1.5">
+              <a href={buildPageUrl(Math.max(1, currentPage - 1))}
+                aria-disabled={currentPage === 1}
+                className="px-3 py-1.5 text-xs rounded-lg font-medium transition-colors"
+                style={{
+                  background: "var(--bg-elevated)", color: "var(--text-secondary)", border: "1px solid var(--border)",
+                  opacity: currentPage === 1 ? 0.4 : 1, pointerEvents: currentPage === 1 ? "none" : "auto",
+                }}>
+                Prev
+              </a>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <a key={p} href={buildPageUrl(p)}
+                  className="w-8 h-8 flex items-center justify-center text-xs rounded-lg font-medium transition-all"
+                  style={{
+                    background: currentPage === p ? "linear-gradient(135deg, #7C3AED, #06B6D4)" : "var(--bg-elevated)",
+                    color: currentPage === p ? "#fff" : "var(--text-secondary)",
+                    border: currentPage === p ? "none" : "1px solid var(--border)",
+                  }}>
+                  {p}
+                </a>
+              ))}
+              <a href={buildPageUrl(Math.min(totalPages, currentPage + 1))}
+                aria-disabled={currentPage === totalPages}
+                className="px-3 py-1.5 text-xs rounded-lg font-medium transition-colors"
+                style={{
+                  background: "var(--bg-elevated)", color: "var(--text-secondary)", border: "1px solid var(--border)",
+                  opacity: currentPage === totalPages ? 0.4 : 1, pointerEvents: currentPage === totalPages ? "none" : "auto",
+                }}>
+                Next
+              </a>
+            </div>
+          </div>
+        )}
 
       </section>
     </main>

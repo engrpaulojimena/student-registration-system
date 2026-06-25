@@ -4,6 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+const DEMO_ACCOUNT = {
+  email: "demo@edutrack.com",
+  password: "demo1234",
+};
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail]       = useState("");
@@ -32,6 +37,12 @@ export default function LoginPage() {
     }
 
     router.push("/dashboard");
+  }
+
+  function fillDemo() {
+    setEmail(DEMO_ACCOUNT.email);
+    setPassword(DEMO_ACCOUNT.password);
+    setError("");
   }
 
   return (
@@ -87,9 +98,39 @@ export default function LoginPage() {
           <h2 className="text-lg font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
             Welcome back
           </h2>
-          <p className="text-sm mb-7" style={{ color: "var(--text-muted)" }}>
+          <p className="text-sm mb-5" style={{ color: "var(--text-muted)" }}>
             Sign in to your administrator account
           </p>
+
+          {/* Demo account banner */}
+          <div
+            className="rounded-xl px-4 py-3 mb-6 flex items-center justify-between gap-3"
+            style={{
+              background: "rgba(124,58,237,0.08)",
+              border: "1px solid rgba(124,58,237,0.25)",
+            }}
+          >
+            <div>
+              <p className="text-xs font-semibold mb-0.5" style={{ color: "#A78BFA" }}>
+                🎭 Demo Account
+              </p>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                {DEMO_ACCOUNT.email} · demo1234
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={fillDemo}
+              className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+              style={{
+                background: "rgba(124,58,237,0.2)",
+                color: "#A78BFA",
+                border: "1px solid rgba(124,58,237,0.3)",
+              }}
+            >
+              Use Demo
+            </button>
+          </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div>

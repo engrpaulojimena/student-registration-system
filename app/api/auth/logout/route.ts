@@ -1,7 +1,18 @@
 import { NextResponse } from "next/server";
-import { deleteSession } from "@/lib/auth";
+
+const COOKIE_NAME = "edutrack_session";
 
 export async function POST() {
-  await deleteSession();
-  return NextResponse.json({ success: true });
+  const response = NextResponse.json({ success: true });
+
+  // Properly expire the cookie in the response headers
+  response.cookies.set(COOKIE_NAME, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 0, // immediately expire
+    path: "/",
+  });
+
+  return response;
 }

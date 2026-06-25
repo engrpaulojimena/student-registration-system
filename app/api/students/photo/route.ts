@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { pool } from "@/lib/db";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import cloudinary from "@/lib/cloudinary";
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
@@ -23,18 +22,26 @@ export async function POST(req: NextRequest) {
   // Max 5MB
   if (file.size > 5 * 1024 * 1024)
     return NextResponse.json({ error: "File too large. Max 5MB." }, { status: 400 });
+const bytes = await file.arrayBuffer();
+const buffer = Buffer.from(bytes);
 
-  const ext = file.name.split(".").pop() ?? "jpg";
-  const fileName = `student_${studentId}_${Date.now()}.${ext}`;
+const result = await new Promise<any>((resolve, reject) => {
+  const stream = cloudinary.uploader.upload_stream(
+    {
+      folder: "students",
+      public_id: `student_${studentId}_${Date.now()}`,
+    },
+    (error, result) => {
+      if (error) reject(error);
+      else resolve(result);
+    }
+  );
 
-  // Save to public/uploads/students/
-  const uploadDir = path.join(process.cwd(), "public", "uploads", "students");
-  await mkdir(uploadDir, { recursive: true });
+  stream.end(buffer);
+});
 
-  const bytes = await file.arrayBuffer();
-  await writeFile(path.join(uploadDir, fileName), Buffer.from(bytes));
+const photoUrl = result.secure_url;
 
-  const photoUrl = `/uploads/students/${fileName}`;
 
   // Update DB
   await pool.query(
